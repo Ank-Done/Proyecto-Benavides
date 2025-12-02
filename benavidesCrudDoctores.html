@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gestor de Pacientes — Panel del Doctor</title>
+<style>
+  /* Tipografía AG Book Rounded: se intentará usar local si existe; se definen fallbacks seguros */
+  @font-face {
+    font-family: "AG Book Rounded";
+    src: local("AG Book Rounded"), local("AGBookRounded");
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "AG Book Rounded";
+    src: local("AG Book Rounded Medium"), local("AGBookRounded-Medium");
+    font-weight: 500;
+    font-style: normal;
+  }
+  /*
+  @font-face {  //esta cosa hace como que se vea todo transparente y se ve feo.
+    font-family: "AG Book Rounded";
+    src: local("AG Book Rounded Bold"), local("AGBookRounded-Bold");
+    font-weight: 700;
+    font-style: normal;
+  }
+*/
+  :root{
+    /* Paleta Pantone */
+    --primary-red:#DA291C;     /* Pantone 485 - HEX: #DA291C */
+    --primary-blue:#001489;    /* Pantone Reflex Blue - HEX: #001489 */
+    --secondary-blue1:#1C57A7; /* Pantone 2727 - HEX aproximado: #1C57A7 */
+    --secondary-blue2:#A7C6ED; /* Pantone 2717 - HEX aproximado: #A7C6ED */
+
+    /* Base UI blanca */
+    --bg:#ffffff;
+    --card:#f9fafc;
+    --text:#222;
+    --muted:#606a7a;
+    --border:#d7dbe3;
+    --input:#eef1f6;
+
+    /* Estados y sombras */
+    --danger:#DA291C;
+    --ok:#1C57A7;
+    --warn:#A7C6ED;
+
+    /* Dimensiones */
+    --radius:14px;
+    --radius-sm:10px;
+    --shadow-1:0 4px 10px rgba(0,0,0,.06);
+    --shadow-2:0 8px 24px rgba(0,0,0,.08);
+    --focus:0 0 0 3px rgba(28,87,167,.18);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    color:var(--text);
+    background:
+      linear-gradient(180deg,#ffffff 0%,#fbfcfe 35%,#f7f9fd 100%);
+    font-family:"AG Book Rounded", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+    font-weight:400; /* Regular por defecto: párrafos */
+  }
+
+  /* Jerarquía tipográfica */
+  h1,h2,h3{font-weight:700; color:var(--primary-blue)} /* Bold - Cabeceras y títulos cortos */
+  h4,h5{font-weight:500; color:var(--primary-blue)}    /* Medium - Títulos */
+  p, label, td, th, span{font-weight:400}              /* Regular - Párrafos */
+  h1{font-size:22px}
+  h2{font-size:18px}
+  h3{font-size:15px}
+  .muted{color:var(--muted)}
+
+  .container{max-width:1150px; margin:0 auto; padding:24px}
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 0 14px;
+    border-bottom:3px solid var(--primary-blue);
+  }
+  .brand{display:flex; align-items:center; gap:14px}
+  .logo{
+    width:42px; height:42px; border-radius:12px;
+    background:linear-gradient(135deg,var(--primary-red),var(--primary-blue));
+    box-shadow:0 10px 26px rgba(0,20,137,.20);
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:var(--shadow-1);
+  }
+  .card.tight{padding:12px}
+
+  .grid{display:grid; gap:16px}
+  .grid-2{grid-template-columns:1.2fr .8fr}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  @media (max-width:980px){ .grid-2,.grid-3,.grid-4{grid-template-columns:1fr} }
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap}
+  .split{display:flex; gap:12px; flex-wrap:wrap}
+  .right{text-align:right}
+  .center{text-align:center}
+
+  .btn{
+    border:none; border-radius:var(--radius-sm);
+    padding:10px 14px; cursor:pointer;
+    font-weight:600;
+    font-family:"AG Book Rounded", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+    transition:transform .05s ease, filter .15s ease, box-shadow .2s ease;
+  }
+  .btn:hover{filter:brightness(.98); transform:translateY(-1px)}
+  .btn.primary{background:var(--primary-blue); color:#fff; box-shadow:0 6px 18px rgba(0,20,137,.16)}
+  .btn.secondary{background:var(--secondary-blue1); color:#fff; box-shadow:0 6px 18px rgba(28,87,167,.16)}
+  .btn.ok{background:var(--ok); color:#fff}
+  .btn.warn{background:var(--warn); color:var(--primary-blue)}
+  .btn.light{background:#fff; color:var(--primary-blue); border:1px solid var(--border)}
+  .btn.ghost{background:#fff; color:var(--primary-blue); border:1px dashed var(--border)}
+  .btn.danger{background:var(--danger); color:#fff; box-shadow:0 6px 18px rgba(218,41,28,.18)}
+
+  .input, select, textarea{
+    width:100%;
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--border);
+    background:var(--input);
+    color:var(--text);
+    outline:none;
+    font-family:"AG Book Rounded","Segoe UI",Roboto,system-ui,-apple-system,sans-serif;
+  }
+  .input:focus, select:focus, textarea:focus{
+    border-color:var(--secondary-blue1);
+    box-shadow:var(--focus);
+    background:#fff;
+  }
+  label{font-size:12px; color:var(--muted); margin-bottom:6px; display:block}
+  .field{display:flex; flex-direction:column; gap:6px}
+
+  .table{
+    width:100%; border-collapse:collapse; overflow:hidden;
+    border-radius:12px; border:1px solid var(--border);
+    background:#fff;
+  }
+  .table th, .table td{
+    padding:12px; border-bottom:1px solid var(--border);
+    text-align:left; vertical-align:top;
+  }
+  .table thead th{
+    background:var(--secondary-blue2); color:var(--primary-blue);
+    font-size:12px; letter-spacing:.2px;
+  }
+  .table .right{ text-align:right }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 10px; border-radius:999px; font-size:12px;
+    border:1px solid var(--border); background:#fff; color:var(--primary-blue);
+  }
+  .status-ok{border-color:#1C57A7; color:#1C57A7; background:#E9F1FF}
+  .status-warn{border-color:#1C57A7; color:#1C57A7; background:#D7E6FB}
+  .status-risk{border-color:#DA291C; color:#fff; background:#DA291C}
+
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:999px; font-size:12px;
+    background:#eef3ff; color:#001489; border:1px solid #dde6ff;
+  }
+
+  .kpi{display:flex; gap:12px; flex-wrap:wrap}
+  .kpi .card{
+    padding:12px; border:1px solid var(--border);
+    background:#fff;
+  }
+  .kpi h3{margin:0; font-size:12px; color:var(--primary-blue)}
+  .kpi .value{font-size:18px; font-weight:700}
+
+  .section-title{font-size:14px; color:var(--primary-blue); margin:0 0 8px 0}
+  .footnote{font-size:12px; color:var(--muted)}
+
+  .modal{
+    position:fixed; inset:0; background:rgba(0,0,0,.35);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .modal .card{max-width:780px; width:100%; box-shadow:var(--shadow-2)}
+  .modal-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+  .hidden{display:none !important}
+  .center{ text-align:center }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div>
+          <h1>Panel del Doctor · Gestor de Pacientes</h1>
+          <div class="muted">Entregado por el equipo de DEVLER</div>
+        </div>
+      </div>
+      <div id="userBadge" class="badge hidden">
+        <span>Sesión:</span><strong id="userName">dradmin</strong>
+      </div>
+    </header>
+
+    <!-- LOGIN -->
+    <section id="loginView" class="grid" aria-label="Acceso">
+      <div class="card">
+        <h2 style="margin:0 0 8px 0">Iniciar sesión</h2>
+        <p class="muted" style="margin:0 0 16px 0">Use sus credenciales de doctor para acceder al sistema.</p>
+        <div class="grid grid-2">
+          <div class="field">
+            <label for="user">Usuario</label>
+            <input class="input" id="user" placeholder="Escribe tu usuario" autocomplete="username"/>
+          </div>
+          <div class="field">
+            <label for="pass">Contraseña</label>
+            <input class="input" id="pass" type="password" placeholder="Escribe la Contraseña" autocomplete="current-password"/>
+          </div>
+        </div>
+        <div class="split">
+          <button class="btn ok" id="loginBtn">Entrar</button>
+          <button class="btn light" id="fillBtn" title="Autocompletar credenciales">Autocompletar</button>
+        </div>
+        <p id="loginError" class="footnote hidden" style="color:var(--danger)" role="alert">Credenciales inválidas.</p>
+      </div>
+    </section>
+
+    <!-- APP -->
+    <section id="appView" class="hidden" aria-label="Gestor de pacientes">
+      <div class="grid">
+        <!-- Toolbar / KPIs -->
+        <div class="card">
+          <div class="split" style="justify-content:space-between; align-items:center;">
+            <div class="toolbar">
+              <button class="btn secondary" id="newPatientBtn">Nuevo paciente</button>
+              <button class="btn primary" id="exportBtn" title="Exportar JSON">Exportar</button>
+              <button class="btn light" id="importBtn" title="Importar JSON">Importar</button>
+              <button class="btn danger" id="logoutBtn">Cerrar sesión</button>
+            </div>
+            <div class="kpi">
+              <div class="card tight">
+                <h3>Pacientes</h3>
+                <div class="value" id="kpiCount">0</div>
+              </div>
+              <div class="card tight">
+                <h3>Con riesgo</h3>
+                <div class="value" style="color:var(--danger)" id="kpiRisk">0</div>
+              </div>
+              <div class="card tight">
+                <h3>Última actualización</h3>
+                <div class="value" style="color:var(--primary-blue)" id="kpiUpdated">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card">
+          <h3 class="section-title">Búsqueda y filtros</h3>
+          <div class="grid grid-3">
+            <div class="field">
+              <label for="q">Buscar por nombre, expediente o etiqueta</label>
+              <input class="input" id="q" placeholder="Ej: Juan Pérez, EXP-0003, Diabetes"/>
+            </div>
+            <div class="field">
+              <label for="risk">Riesgo</label>
+              <select id="risk" class="input">
+                <option value="">Todos</option>
+                <option value="bajo">Bajo</option>
+                <option value="medio">Medio</option>
+                <option value="alto">Alto</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="sort">Ordenar</label>
+              <select id="sort" class="input">
+                <option value="nombre">Nombre</option>
+                <option value="expediente">Expediente</option>
+                <option value="actualizado">Última actualización</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card">
+          <h3 class="section-title">Lista de pacientes</h3>
+          <table class="table" aria-label="Tabla de pacientes">
+            <thead>
+              <tr>
+                <th>Expediente</th>
+                <th>Nombre</th>
+                <th>Edad</th>
+                <th>Riesgo</th>
+                <th>Etiquetas</th>
+                <th class="right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="patientsTbody"></tbody>
+          </table>
+          <p class="footnote muted">Los datos se guardan localmente en su navegador (localStorage).</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL NUEVO/EDITAR -->
+  <div id="patientModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="patientModalTitle">
+    <div class="card">
+      <div class="modal-header">
+        <h2 id="patientModalTitle" style="margin:0">Ficha de paciente</h2>
+        <button class="btn light" id="closePatientModal">Cerrar</button>
+      </div>
+      <div class="grid grid-2">
+        <div>
+          <h3 class="section-title">Datos generales</h3>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="pExp">Expediente</label>
+              <input id="pExp" class="input" placeholder="EXP-0001"/>
+            </div>
+            <div class="field">
+              <label for="pNombre">Nombre completo</label>
+              <input id="pNombre" class="input" placeholder="Nombre Apellido"/>
+            </div>
+            <div class="field">
+              <label for="pEdad">Edad</label>
+              <input id="pEdad" class="input" type="number" min="0" max="120" placeholder="Ej: 45"/>
+            </div>
+            <div class="field">
+              <label for="pGenero">Género</label>
+              <select id="pGenero" class="input">
+                <option value="">No especificado</option>
+                <option>Mujer</option>
+                <option>Hombre</option>
+                <option>Otro</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="pRiesgo">Riesgo</label>
+              <select id="pRiesgo" class="input">
+                <option value="bajo">Bajo</option>
+                <option value="medio">Medio</option>
+                <option value="alto">Alto</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="pEtiquetas">Etiquetas</label>
+              <input id="pEtiquetas" class="input" placeholder="Diabetes, HTA"/>
+            </div>
+          </div>
+          <h3 class="section-title" style="margin-top:12px">Contacto</h3>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="pTelefono">Teléfono</label>
+              <input id="pTelefono" class="input" placeholder="+52 81 0000 0000"/>
+            </div>
+            <div class="field">
+              <label for="pEmail">Email</label>
+              <input id="pEmail" class="input" type="email" placeholder="paciente@correo.com"/>
+            </div>
+            <div class="field">
+              <label for="pDireccion">Dirección</label>
+              <input id="pDireccion" class="input" placeholder="Calle, número, colonia, ciudad"/>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="section-title">Historial médico</h3>
+          <div class="field">
+            <label for="pAntecedentes">Antecedentes personales y familiares</label>
+            <textarea id="pAntecedentes" class="input" rows="4" placeholder="Ej: DM2, HTA, madre con hipotiroidismo"></textarea>
+          </div>
+          <div class="field">
+            <label for="pAlergias">Alergias</label>
+            <textarea id="pAlergias" class="input" rows="3" placeholder="Penicilina, mariscos"></textarea>
+          </div>
+          <div class="field">
+            <label for="pMedicacion">Medicación actual</label>
+            <textarea id="pMedicacion" class="input" rows="3" placeholder="Metformina 850 mg c/12h, Losartán 50 mg c/24h"></textarea>
+          </div>
+          <div class="field">
+            <label for="pNotas">Notas de evolución</label>
+            <textarea id="pNotas" class="input" rows="5" placeholder="Resumen de consultas, signos vitales, estudios, indicaciones"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="split" style="justify-content:space-between; margin-top:12px;">
+        <div class="toolbar">
+          <button class="btn ok" id="savePatientBtn">Guardar</button>
+          <button class="btn primary" id="saveClosePatientBtn">Guardar y cerrar</button>
+        </div>
+        <button class="btn danger" id="deletePatientBtn">Eliminar paciente</button>
+      </div>
+      <p class="footnote muted">Los cambios se guardan automáticamente en su navegador.</p>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE -->
+  <div id="detailModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+    <div class="card">
+      <div class="modal-header">
+        <h2 id="detailModalTitle" style="margin:0">Detalle del paciente</h2>
+        <button class="btn light" id="closeDetailModal">Cerrar</button>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const STORAGE_KEY = "nexo.pacientes.v1";
+  const LOGIN_USER = "dradmin";
+  const LOGIN_PASS = "contraseña123";
+
+  // Login/UI elements
+  const loginView = document.getElementById("loginView");
+  const appView   = document.getElementById("appView");
+  const loginBtn  = document.getElementById("loginBtn");
+  const fillBtn   = document.getElementById("fillBtn");
+  const userInput = document.getElementById("user");
+  const passInput = document.getElementById("pass");
+  const loginError= document.getElementById("loginError");
+  const userBadge = document.getElementById("userBadge");
+  const userName  = document.getElementById("userName");
+
+  const newPatientBtn = document.getElementById("newPatientBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  const qInput = document.getElementById("q");
+  const riskSelect = document.getElementById("risk");
+  const sortSelect = document.getElementById("sort");
+  const tbody = document.getElementById("patientsTbody");
+
+  // Patient modal
+  const patientModal = document.getElementById("patientModal");
+  const closePatientModal = document.getElementById("closePatientModal");
+  const savePatientBtn = document.getElementById("savePatientBtn");
+  const saveClosePatientBtn = document.getElementById("saveClosePatientBtn");
+  const deletePatientBtn = document.getElementById("deletePatientBtn");
+
+  const fields = {
+    exp: document.getElementById("pExp"),
+    nombre: document.getElementById("pNombre"),
+    edad: document.getElementById("pEdad"),
+    genero: document.getElementById("pGenero"),
+    riesgo: document.getElementById("pRiesgo"),
+    etiquetas: document.getElementById("pEtiquetas"),
+    tel: document.getElementById("pTelefono"),
+    email: document.getElementById("pEmail"),
+    dir: document.getElementById("pDireccion"),
+    antecedentes: document.getElementById("pAntecedentes"),
+    alergias: document.getElementById("pAlergias"),
+    medicacion: document.getElementById("pMedicacion"),
+    notas: document.getElementById("pNotas")
+  };
+
+  // Detail modal
+  const detailModal = document.getElementById("detailModal");
+  const closeDetailModal = document.getElementById("closeDetailModal");
+  const detailContent = document.getElementById("detailContent");
+
+  // State
+  let pacientes = load();
+  let editingId = null;
+  let logged = false;
+
+  // Seed if empty
+  if (!pacientes.length) {
+    pacientes = [
+      {
+        id: uid(), expediente:"EXP-0001", nombre:"Juan Pérez", edad:52, genero:"Hombre",
+        riesgo:"medio", etiquetas:["Diabetes","HTA"], tel:"+52 81 1111 1111",
+        email:"juan.perez@example.com", dir:"Av. Siempre Viva 123, Monterrey",
+        antecedentes:"DM2 desde 2015. Padre con ECV.",
+        alergias:"Ninguna conocida.",
+        medicacion:"Metformina 850 mg c/12h. Losartán 50 mg c/24h.",
+        notas:"Control trimestral. Última HbA1c 7.1%. PA 135/85.",
+        actualizado: Date.now()
+      },
+      {
+        id: uid(), expediente:"EXP-0002", nombre:"María López", edad:34, genero:"Mujer",
+        riesgo:"bajo", etiquetas:["Hipotiroidismo"], tel:"+52 81 2222 2222",
+        email:"maria.lopez@example.com", dir:"Calle Luna 45, Monterrey",
+        antecedentes:"Madre con DM2. Sin ECV.",
+        alergias:"Penicilina.",
+        medicacion:"Levotiroxina 75 mcg c/24h.",
+        notas:"TSH en rango. Seguimiento semestral.",
+        actualizado: Date.now()
+      },
+      {
+        id: uid(), expediente:"EXP-0003", nombre:"Carlos Ruiz", edad:68, genero:"Hombre",
+        riesgo:"alto", etiquetas:["EPOC","Tabaquismo"], tel:"+52 81 3333 3333",
+        email:"carlos.ruiz@example.com", dir:"Col. Centro, Monterrey",
+        antecedentes:"Tabaquismo crónico. EPOC GOLD II.",
+        alergias:"AINEs (gastritis).",
+        medicacion:"Tiotropio inhalado diario. Salbutamol PRN.",
+        notas:"Saturación basal 92%. Recomendado rehabilitación pulmonar.",
+        actualizado: Date.now()
+      }
+    ];
+    save();
+  }
+
+  // Login actions
+  loginBtn.addEventListener("click", () => {
+    const u = (userInput.value || "").trim();
+    const p = passInput.value;
+    if (u === LOGIN_USER && p === LOGIN_PASS) {
+      logged = true;
+      userName.textContent = u;
+      loginError.classList.add("hidden");
+      loginView.classList.add("hidden");
+      appView.classList.remove("hidden");
+      userBadge.classList.remove("hidden");
+      render();
+    } else {
+      loginError.classList.remove("hidden");
+    }
+  });
+
+  fillBtn.addEventListener("click", () => {
+    userInput.value = LOGIN_USER;
+    passInput.value = LOGIN_PASS;
+    userInput.focus();
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    logged = false;
+    appView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+    userBadge.classList.add("hidden");
+    userInput.value = "";
+    passInput.value = "";
+    loginError.classList.add("hidden");
+  });
+
+  // Filters
+  qInput.addEventListener("input", render);
+  riskSelect.addEventListener("change", render);
+  sortSelect.addEventListener("change", render);
+
+  // CRUD open modal
+  newPatientBtn.addEventListener("click", () => {
+    editingId = null;
+    setModalTitle("Nuevo paciente");
+    clearFields();
+    deletePatientBtn.classList.add("hidden");
+    openModal(patientModal);
+  });
+
+  closePatientModal.addEventListener("click", () => closeModal(patientModal));
+
+  savePatientBtn.addEventListener("click", () => {
+    saveFromFields();
+    render();
+  });
+
+  saveClosePatientBtn.addEventListener("click", () => {
+    saveFromFields();
+    render();
+    closeModal(patientModal);
+  });
+
+  deletePatientBtn.addEventListener("click", () => {
+    if (editingId) {
+      const idx = pacientes.findIndex(p => p.id === editingId);
+      if (idx >= 0) {
+        const name = pacientes[idx].nombre;
+        if (confirm("Confirmar eliminación de " + name)) {
+          pacientes.splice(idx, 1);
+          save();
+          render();
+          closeModal(patientModal);
+        }
+      }
+    }
+  });
+
+  // Import/Export
+  exportBtn.addEventListener("click", () => {
+    const data = JSON.stringify(pacientes, null, 2);
+    const blob = new Blob([data], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "pacientes.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  importBtn.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file"; input.accept = "application/json";
+    input.onchange = () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result || "[]"));
+          if (Array.isArray(data)) {
+            pacientes = data.map(normalizePatient);
+            save();
+            render();
+            alert("Importación exitosa.");
+          } else {
+            alert("Formato inválido. Debe ser un arreglo JSON de pacientes.");
+          }
+        } catch (e) {
+          alert("No se pudo leer el archivo JSON.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+
+  // Render list
+  function render(){
+    const q = (qInput.value || "").toLowerCase().trim();
+    const r = (riskSelect.value || "").toLowerCase();
+    let data = pacientes.slice();
+
+    // Filter
+    if (q) {
+      data = data.filter(p => {
+        const text = [
+          p.expediente, p.nombre, String(p.edad || ""),
+          p.genero || "", ...(p.etiquetas || [])
+        ].join(" ").toLowerCase();
+        return text.includes(q);
+      });
+    }
+    if (r) data = data.filter(p => (p.riesgo || "").toLowerCase() === r);
+
+    // Sort
+    const s = sortSelect.value;
+    data.sort((a,b) => {
+      if (s === "nombre") return (a.nombre || "").localeCompare(b.nombre || "");
+      if (s === "expediente") return (a.expediente || "").localeCompare(b.expediente || "");
+      if (s === "actualizado") return (b.actualizado || 0) - (a.actualizado || 0);
+      return 0;
+    });
+
+    // KPIs
+    document.getElementById("kpiCount").textContent = String(pacientes.length);
+    document.getElementById("kpiRisk").textContent  = String(pacientes.filter(p => (p.riesgo || "").toLowerCase() === "alto").length);
+    document.getElementById("kpiUpdated").textContent = lastUpdated(pacientes);
+
+    // Table
+    tbody.innerHTML = "";
+    if (!data.length){
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.innerHTML = '<div class="center muted">No hay pacientes con los criterios actuales.</div>';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    data.forEach(p => {
+      const tr = document.createElement("tr");
+
+      const tdExp = document.createElement("td");
+      tdExp.textContent = p.expediente || "—";
+
+      const tdNom = document.createElement("td");
+      tdNom.innerHTML = '<strong style="color:var(--primary-blue)">' + escapeHTML(p.nombre || "—") + '</strong>' +
+        '<div class="muted" style="font-size:12px">' + escapeHTML(p.email || "") + '</div>';
+
+      const tdEdad = document.createElement("td");
+      tdEdad.textContent = p.edad != null ? String(p.edad) : "—";
+
+      const tdRiesgo = document.createElement("td");
+      const riesgo = (p.riesgo || "").toLowerCase();
+      const riskClass = riesgo === "alto" ? "status-risk" : (riesgo === "medio" ? "status-warn" : "status-ok");
+      tdRiesgo.innerHTML = '<span class="badge '+ riskClass +'">' + escapeHTML(p.riesgo || "—") + '</span>';
+
+      const tdTags = document.createElement("td");
+      const tags = (p.etiquetas || []).map(t => '<span class="pill">' + escapeHTML(t) + '</span>').join(" ");
+      tdTags.innerHTML = tags || '<span class="muted">—</span>';
+
+      const tdAcc = document.createElement("td");
+      tdAcc.className = "right";
+      tdAcc.innerHTML = '' +
+        '<div class="toolbar" style="justify-content:flex-end">' +
+          '<button class="btn light" data-id="'+ p.id +'" data-action="ver">Ver</button>' +
+          '<button class="btn secondary" data-id="'+ p.id +'" data-action="editar">Editar</button>' +
+          '<button class="btn danger" data-id="'+ p.id +'" data-action="eliminar">Eliminar</button>' +
+        '</div>';
+
+      tr.appendChild(tdExp);
+      tr.appendChild(tdNom);
+      tr.appendChild(tdEdad);
+      tr.appendChild(tdRiesgo);
+      tr.appendChild(tdTags);
+      tr.appendChild(tdAcc);
+      tbody.appendChild(tr);
+    });
+
+    // bind actions
+    tbody.querySelectorAll("button[data-action]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const id = String(e.currentTarget.getAttribute("data-id") || "");
+        const action = String(e.currentTarget.getAttribute("data-action") || "");
+        const p = pacientes.find(x => String(x.id) === id);
+        if (!p) return;
+        if (action === "ver") openDetail(p);
+        if (action === "editar") openEdit(p);
+        if (action === "eliminar") deleteRow(p);
+      });
+    });
+  }
+
+  // Detail view
+  function openDetail(p){
+    document.getElementById("detailModalTitle").textContent = "Detalle · " + (p.nombre || "");
+    detailContent.innerHTML = '' +
+      '<div class="grid grid-2">' +
+        '<div class="card tight">' +
+          '<h3 class="section-title">Resumen</h3>' +
+          '<p><strong>Expediente:</strong> ' + escapeHTML(p.expediente || "—") + '</p>' +
+          '<p><strong>Nombre:</strong> ' + escapeHTML(p.nombre || "—") + '</p>' +
+          '<p><strong>Edad:</strong> ' + (p.edad != null ? String(p.edad) : "—") + '</p>' +
+          '<p><strong>Género:</strong> ' + escapeHTML(p.genero || "—") + '</p>' +
+          '<p><strong>Riesgo:</strong> <span class="badge">' + escapeHTML(p.riesgo || "—") + '</span></p>' +
+          '<p><strong>Etiquetas:</strong> ' + ((p.etiquetas || []).map(t => '<span class="pill">' + escapeHTML(t) + '</span>').join(" ") || '<span class="muted">—</span>') + '</p>' +
+        '</div>' +
+        '<div class="card tight">' +
+          '<h3 class="section-title">Contacto</h3>' +
+          '<p><strong>Teléfono:</strong> ' + escapeHTML(p.tel || "—") + '</p>' +
+          '<p><strong>Email:</strong> ' + escapeHTML(p.email || "—") + '</p>' +
+          '<p><strong>Dirección:</strong> ' + escapeHTML(p.dir || "—") + '</p>' +
+          '<p class="muted">Actualizado: ' + formatDate(p.actualizado) + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid">' +
+        '<div class="card tight">' +
+          '<h3 class="section-title">Historial médico</h3>' +
+          '<p><strong>Antecedentes:</strong><br/>' + nl2br(escapeHTML(p.antecedentes || "—")) + '</p>' +
+          '<p><strong>Alergias:</strong><br/>' + nl2br(escapeHTML(p.alergias || "—")) + '</p>' +
+          '<p><strong>Medicación actual:</strong><br/>' + nl2br(escapeHTML(p.medicacion || "—")) + '</p>' +
+          '<p><strong>Notas de evolución:</strong><br/>' + nl2br(escapeHTML(p.notas || "—")) + '</p>' +
+        '</div>' +
+      '</div>';
+    openModal(detailModal);
+  }
+
+  // Edit view
+  function openEdit(p){
+    editingId = p.id;
+    setModalTitle("Editar paciente · " + (p.nombre || ""));
+    deletePatientBtn.classList.remove("hidden");
+    fillFields(p);
+    openModal(patientModal);
+  }
+
+  function deleteRow(p){
+    if (confirm("Eliminar definitivamente a " + (p.nombre || "") + "?")) {
+      pacientes = pacientes.filter(x => String(x.id) !== String(p.id));
+      save();
+      render();
+    }
+  }
+
+  // Helpers
+  function setModalTitle(t){ document.getElementById("patientModalTitle").textContent = t; }
+  function openModal(el){ el.classList.remove("hidden"); }
+  function closeModal(el){ el.classList.add("hidden"); }
+  closeDetailModal.addEventListener("click", () => closeModal(detailModal));
+
+  function clearFields(){
+    Object.values(fields).forEach(el => { el.value = ""; });
+    fields.riesgo.value = "bajo";
+  }
+  function fillFields(p){
+    fields.exp.value = p.expediente || "";
+    fields.nombre.value = p.nombre || "";
+    fields.edad.value = p.edad != null ? String(p.edad) : "";
+    fields.genero.value = p.genero || "";
+    fields.riesgo.value = p.riesgo || "bajo";
+    fields.etiquetas.value = (p.etiquetas || []).join(", ");
+    fields.tel.value = p.tel || "";
+    fields.email.value = p.email || "";
+    fields.dir.value = p.dir || "";
+    fields.antecedentes.value = p.antecedentes || "";
+    fields.alergias.value = p.alergias || "";
+    fields.medicacion.value = p.medicacion || "";
+    fields.notas.value = p.notas || "";
+  }
+
+  function saveFromFields(){
+    const data = {
+      expediente: (fields.exp.value || "").trim(),
+      nombre: (fields.nombre.value || "").trim(),
+      edad: fields.edad.value ? Number(fields.edad.value) : null,
+      genero: (fields.genero.value || ""),
+      riesgo: (fields.riesgo.value || "bajo"),
+      etiquetas: String(fields.etiquetas.value || "")
+        .split(",").map(t => t.trim()).filter(Boolean),
+      tel: (fields.tel.value || "").trim(),
+      email: (fields.email.value || "").trim(),
+      dir: (fields.dir.value || "").trim(),
+      antecedentes: (fields.antecedentes.value || "").trim(),
+      alergias: (fields.alergias.value || "").trim(),
+      medicacion: (fields.medicacion.value || "").trim(),
+      notas: (fields.notas.value || "").trim(),
+      actualizado: Date.now()
+    };
+
+    if (!data.expediente || !data.nombre){
+      alert("Expediente y Nombre son obligatorios.");
+      return;
+    }
+
+    if (editingId){
+      const idx = pacientes.findIndex(p => String(p.id) === String(editingId));
+      if (idx >= 0) {
+        pacientes[idx] = { ...pacientes[idx], ...data };
+      }
+    } else {
+      pacientes.push({ id: uid(), ...data });
+      editingId = null;
+    }
+    save();
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      return [];
+    }
+  }
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pacientes));
+  }
+  function uid(){
+    return "p_" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-6);
+  }
+  function normalizePatient(p){
+    const tags = Array.isArray(p.etiquetas)
+      ? p.etiquetas
+      : String(p.etiquetas || "").split(",").map(t => t.trim()).filter(Boolean);
+    return {
+      id: p.id || uid(),
+      expediente: p.expediente || "",
+      nombre: p.nombre || "",
+      edad: p.edad != null ? Number(p.edad) : null,
+      genero: p.genero || "",
+      riesgo: p.riesgo || "bajo",
+      etiquetas: tags,
+      tel: p.tel || "",
+      email: p.email || "",
+      dir: p.dir || "",
+      antecedentes: p.antecedentes || "",
+      alergias: p.alergias || "",
+      medicacion: p.medicacion || "",
+      notas: p.notas || "",
+      actualizado: p.actualizado || Date.now()
+    };
+  }
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c];
+    });
+  }
+  function nl2br(s){
+    return String(s).replace(/\n/g, "<br/>");
+  }
+  function formatDate(ts){
+    if (!ts) return "—";
+    const d = new Date(ts);
+    try{
+      return d.toLocaleString("es-MX", { dateStyle:"medium", timeStyle:"short" });
+    }catch(e){
+      return d.toLocaleString();
+    }
+  }
+  function lastUpdated(list){
+    if (!list.length) return "—";
+    const ts = Math.max.apply(null, list.map(p => p.actualizado || 0));
+    return formatDate(ts);
+  }
+
+})();
+</script>
+</body>
+</html>
