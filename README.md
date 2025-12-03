@@ -4,4 +4,8 @@ La base de datos clínica fue diseñada con DBeaver e implementada en MariaDB, e
 ## Demo de Prototipo
 https://www.figma.com/proto/o1EJJJ4B30NE7kQdYtsFA6/Untitled?node-id=0-1&t=cEZ9QlSnC8i2ZTbe-1
 
+https://youtu.be/7RZs6U-k8gc
+
+https://www.youtube.com/watch?v=CX3rZQGZwno
+
 ## Los documentos como el acceso a la función desarrollada y el prototipo se encuentran en este repositorio
